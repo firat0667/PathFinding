@@ -7,6 +7,7 @@ public class Grid : MonoBehaviour
     public LayerMask unWalkableMask;
     public Vector2 gridWorldSize;
     public float nodeRadius;
+    public int obstacleProximityPenalty = 10;
     public TerrainType[] walkableRegions;
     private LayerMask _walkableMask;
     Dictionary<int, int> walkableRegionsDictionary = new Dictionary<int, int>();
@@ -55,15 +56,18 @@ public class Grid : MonoBehaviour
                 Vector3 worldPoint = worldButtomLeft + Vector3.right * (x * nodeDiameter + nodeRadius) + Vector3.forward * (y * nodeDiameter + nodeRadius);
                 bool walkable = !(Physics.CheckSphere(worldPoint, nodeRadius, unWalkableMask));
                 int movementPenalty = 0;
-                if (walkable)
-                {
+              
                     Ray ray = new Ray(worldPoint + Vector3.up * 50, Vector3.down);
                     RaycastHit hit;
                     if(Physics.Raycast(ray,out hit, 100, _walkableMask))
                     {
                         walkableRegionsDictionary.TryGetValue(hit.collider.gameObject.layer, out movementPenalty);
                     }
+                if (!walkable)
+                {
+                    movementPenalty += obstacleProximityPenalty;
                 }
+
                 grid[x, y] = new Node(walkable, worldPoint, x, y, movementPenalty);
             }
         }
@@ -107,7 +111,8 @@ public class Grid : MonoBehaviour
                 int sampleY = Mathf.Clamp(y, 0, gridSizeY - 1);
                 penaltiesVerticalPass[x, 0] += penaltiesHorizontalPass[x, sampleY];
             }
-
+            int blurredPenalty = Mathf.RoundToInt((float)penaltiesVerticalPass[x, 0] / (kernelSize * kernelSize));
+            grid[x, 0].MovementPenalty = blurredPenalty;
             // Diğer sütunlarda pencere kaydırılarak hesaplamalar yapılıyor
             for (int y = 1; y < gridSizeY; y++)
             {
@@ -117,7 +122,7 @@ public class Grid : MonoBehaviour
                     - penaltiesHorizontalPass[x, removeIndex]
                     + penaltiesHorizontalPass[x, addIndex];
 
-                int blurredPenalty =Mathf.RoundToInt((float)penaltiesVerticalPass[x, y] / (kernelSize * kernelSize));
+                 blurredPenalty =Mathf.RoundToInt((float)penaltiesVerticalPass[x, y] / (kernelSize * kernelSize));
                 grid[x, y].MovementPenalty = blurredPenalty;
                 if (blurredPenalty > penaltyMax)
                 {
