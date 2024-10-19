@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 public class Grid : MonoBehaviour
@@ -16,6 +16,10 @@ public class Grid : MonoBehaviour
 
     float nodeDiameter;
     int gridSizeX, gridSizeY;
+
+
+    int penaltymin= int.MaxValue;
+    int penaltyMax = int.MinValue;
 
     private void Awake()
     {
@@ -61,6 +65,68 @@ public class Grid : MonoBehaviour
                     }
                 }
                 grid[x, y] = new Node(walkable, worldPoint, x, y, movementPenalty);
+            }
+        }
+        BlurPenaltyMap(3);
+    }
+    void BlurPenaltyMap(int blurSize)
+    {
+        int kernelSize = blurSize * 2 + 1;
+        int kernelExtents = (kernelSize - 1) / 2;
+
+        int[,] penaltiesHorizontalPass = new int[gridSizeX, gridSizeY];
+        int[,] penaltiesVerticalPass = new int[gridSizeX, gridSizeY];
+
+        // Yatay geçiş için dış döngü y üzerinden yapılıyor
+        for (int y = 0; y < gridSizeY; y++)
+        {
+            // İlk satırda kernel genişliği kadar bir pencere hesaplanıyor
+            for (int x = -kernelExtents; x <= kernelExtents; x++)
+            {
+                int sampleX = Mathf.Clamp(x, 0, gridSizeX - 1);
+                penaltiesHorizontalPass[0, y] += grid[sampleX, y].MovementPenalty;
+            }
+
+            // Diğer satırlarda pencere kaydırılarak hesaplamalar yapılıyor
+            for (int x = 1; x < gridSizeX; x++)
+            {
+                int removeIndex = Mathf.Clamp(x - kernelExtents - 1, 0, gridSizeX - 1);
+                int addIndex = Mathf.Clamp(x + kernelExtents, 0, gridSizeX - 1);
+                penaltiesHorizontalPass[x, y] = penaltiesHorizontalPass[x - 1, y]
+                    - grid[removeIndex, y].MovementPenalty
+                    + grid[addIndex, y].MovementPenalty;
+            }
+        }
+
+        // Dikey geçiş için dış döngü x üzerinden yapılıyor
+        for (int x = 0; x < gridSizeX; x++)
+        {
+            // İlk sütun için kernel genişliği kadar pencere hesaplanıyor
+            for (int y = -kernelExtents; y <= kernelExtents; y++)
+            {
+                int sampleY = Mathf.Clamp(y, 0, gridSizeY - 1);
+                penaltiesVerticalPass[x, 0] += penaltiesHorizontalPass[x, sampleY];
+            }
+
+            // Diğer sütunlarda pencere kaydırılarak hesaplamalar yapılıyor
+            for (int y = 1; y < gridSizeY; y++)
+            {
+                int removeIndex = Mathf.Clamp(y - kernelExtents - 1, 0, gridSizeY - 1);
+                int addIndex = Mathf.Clamp(y + kernelExtents, 0, gridSizeY - 1);
+                penaltiesVerticalPass[x, y] = penaltiesVerticalPass[x, y - 1]
+                    - penaltiesHorizontalPass[x, removeIndex]
+                    + penaltiesHorizontalPass[x, addIndex];
+
+                int blurredPenalty =Mathf.RoundToInt((float)penaltiesVerticalPass[x, y] / (kernelSize * kernelSize));
+                grid[x, y].MovementPenalty = blurredPenalty;
+                if (blurredPenalty > penaltyMax)
+                {
+                    penaltyMax = blurredPenalty;
+                }
+                if(blurredPenalty < penaltymin)
+                {
+                    penaltymin = blurredPenalty;
+                }
             }
         }
     }
@@ -109,8 +175,8 @@ public class Grid : MonoBehaviour
                 {
                     foreach (Node n in grid)
                     {
-
-                        Gizmos.color = (n.Walkable) ? Color.white : Color.red;
+                      Gizmos.color = Color.Lerp(Color.white, Color.black, Mathf.InverseLerp(penaltymin, penaltyMax, n.MovementPenalty));
+                        Gizmos.color = (n.Walkable) ? Gizmos.color : Color.red;
                         Gizmos.DrawCube(n.WorldPosition, Vector3.one * (nodeDiameter - 0.1f));
                     }
                 }
