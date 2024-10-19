@@ -18,15 +18,15 @@ public class Node :IHeapItem<Node>
     int heapIndex;
 
 
- //   public int MovementPenalty;
+    public int MovementPenalty;
 
-    public Node(bool _walkable, Vector3 _worldPos,int _gridx,int _gridy/*int _penalty*/) 
+    public Node(bool _walkable, Vector3 _worldPos,int _gridx,int _gridy,int _penalty) 
     {
         Walkable = _walkable;
         WorldPosition = _worldPos;
         gridX = _gridx;
         gridY = _gridy;
-      // MovementPenalty = _penalty;
+        MovementPenalty = _penalty;
     }
     public int fCost
     {

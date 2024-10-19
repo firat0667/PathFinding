@@ -60,7 +60,7 @@ public class DijkstraPathfinding : MonoBehaviour
                         continue;
                     }
 
-                    int newMovementCostToNeighbour = currentNode.gCost + GetDistance(currentNode, neighboor);
+                    int newMovementCostToNeighbour = currentNode.gCost + GetDistance(currentNode, neighboor)+neighboor.MovementPenalty;
 
                     if (newMovementCostToNeighbour < currentNode.gCost || !openset.Contains(neighboor))
                     {
