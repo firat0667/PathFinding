@@ -378,7 +378,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c205e0a7161827f4fba885a81aa33bd4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DisplayGridGizmos: 1
+  DisplayGridGizmos: 0
   unWalkableMask:
     serializedVersion: 2
     m_Bits: 64
@@ -393,7 +393,7 @@ MonoBehaviour:
   - TerrainLayerMask:
       serializedVersion: 2
       m_Bits: 512
-    terraniPenalty: 12
+    terraniPenalty: 255
 --- !u!114 &233075665
 MonoBehaviour:
   m_ObjectHideFlags: 0
